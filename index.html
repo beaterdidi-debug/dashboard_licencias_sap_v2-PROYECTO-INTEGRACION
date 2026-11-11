@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Medición de licencias SAP | Ecosistema cafetero</title>
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+</head>
+<body>
+<header class="hero">
+  <div class="coffee-art" aria-hidden="true"><span>☕</span><i></i><b></b></div>
+  <div class="hero-content">
+    <div class="eyebrow">Ecosistema cafetero · Gestión y optimización de accesos</div>
+    <h1>Medición de licencias SAP</h1>
+    <p>Visibilidad sobre usuarios, grupos, empresas e inactividad para apoyar decisiones de administración de licencias.</p>
+    <div class="company-tags"><span>Federación Nacional de Cafeteros</span><span>Almacafé</span><span>Buencafé</span><span>Procafecol</span></div>
+  </div>
+  <div class="hero-stamp"><span>CAFÉ</span><strong>FNC</strong><small>Datos · Control · Eficiencia</small></div>
+</header>
+<main class="container">
+  <section class="panel upload-panel">
+    <div>
+      <h2>Importar medición</h2>
+      <p class="muted">Carga el Excel exportado desde SAP. Se procesa localmente en este navegador.</p>
+    </div>
+    <div class="upload-actions">
+      <label class="file-button" for="excelFile">⬆ Seleccionar Excel</label>
+      <input id="excelFile" type="file" accept=".xlsx,.xls,.csv">
+      <button id="demoButton" class="button button-light" type="button">Ver ejemplo</button>
+      <button id="exportButton" class="button" type="button" disabled>Exportar vista CSV</button>
+    </div>
+    <div id="fileStatus" class="file-status">Sin archivo cargado. Usa “Ver ejemplo” o selecciona un Excel.</div>
+  </section>
+
+  <nav class="tabs" aria-label="Secciones del dashboard">
+    <button class="tab active" data-tab="overview" type="button">☕ Dashboard principal</button>
+    <button class="tab" data-tab="inactive" type="button">◷ Sin ingreso 90 días <span id="inactiveBadge" class="tab-badge">0</span></button>
+    <button class="tab" data-tab="alerts" type="button">⚑ Alertas <span id="alertBadge" class="tab-badge alert-badge">0</span></button>
+  </nav>
+
+  <section id="overviewTab" class="tab-content active">
+    <section class="panel filters">
+      <div class="filter-title"><h2>Filtros de medición</h2><button id="clearFilters" class="text-button" type="button">Limpiar filtros</button></div>
+      <div class="filter-grid">
+        <div class="field"><label for="companyFilter">Empresa</label><select id="companyFilter"><option value="">Todas las empresas</option></select></div>
+        <div class="field"><label for="groupFilter">Grupo</label><select id="groupFilter"><option value="">Todos los grupos</option></select></div>
+        <div class="field"><label for="idFilter">ID · Tipo de licencia</label><select id="idFilter"><option value="">Todos los ID</option></select></div>
+        <div class="field"><label for="searchInput">Buscar usuario</label><input id="searchInput" type="search" placeholder="Usuario, nombre, grupo…"></div>
+      </div>
+    </section>
+    <section class="kpi-grid">
+      <article class="panel kpi"><span class="kpi-label">Registros en la vista</span><strong id="totalRecords">0</strong><span class="kpi-foot">Filas según filtros</span></article>
+      <article class="panel kpi"><span class="kpi-label">Usuarios únicos</span><strong id="uniqueUsers">0</strong><span class="kpi-foot">Por identificador de usuario</span></article>
+      <article class="panel kpi"><span class="kpi-label">Empresas</span><strong id="companyCount">0</strong><span class="kpi-foot">En la selección actual</span></article>
+      <article class="panel kpi"><span class="kpi-label">Grupos</span><strong id="groupCount">0</strong><span class="kpi-foot">En la selección actual</span></article>
+    </section>
+    <section class="chart-grid">
+      <article class="panel chart-panel">
+        <div class="panel-heading"><div><h2>Distribución por ID</h2><p>Tipo de licencia según el campo ID.</p></div><span class="chart-chip chip-purple">Porcentaje + cantidad</span></div>
+        <div class="chart-box"><canvas id="idChart"></canvas></div><div id="idLegend" class="custom-legend"></div>
+      </article>
+      <article class="panel chart-panel">
+        <div class="panel-heading"><div><h2>Registros por empresa</h2><p>Participación porcentual de cada empresa.</p></div><span class="chart-chip chip-green">Participación</span></div>
+        <div class="chart-box"><canvas id="companyChart"></canvas></div>
+      </article>
+      <article class="panel chart-panel">
+        <div class="panel-heading"><div><h2>Registros por grupo</h2><p>Grupos con mayor volumen en la selección.</p></div><span class="chart-chip chip-orange">Top 15</span></div>
+        <div class="chart-box tall"><canvas id="groupChart"></canvas></div>
+      </article>
+      <article class="panel chart-panel">
+        <div class="panel-heading"><div><h2>Total de usuarios por licencia (ID)</h2><p>Cantidad total de usuarios por cada ID, sin dividir por empresa ni grupo. Las otras gráficas muestran ese detalle.</p></div><span class="chart-chip chip-blue">Total por licencia</span></div>
+        <div class="chart-box tall"><canvas id="companyIdChart"></canvas></div>
+      </article>
+    </section>
+    <section class="panel data-panel">
+      <div class="table-heading"><div><h2>Detalle de usuarios</h2><p>Datos reconocidos desde el archivo de medición.</p></div><span id="rowCount" class="row-count">0 registros</span></div>
+      <div class="table-scroll" id="tableContainer"><div class="empty-state">Carga un Excel o pulsa “Ver ejemplo”.</div></div>
+      <p class="table-note">Se muestran hasta 500 filas en la tabla; los indicadores y gráficos consideran todos los registros filtrados.</p>
+    </section>
+  </section>
+
+  <section id="inactiveTab" class="tab-content">
+    <div class="section-intro"><div class="intro-icon">◷</div><div><h2>Sin ingreso 90 días</h2><p>Se compara la fecha de carga del archivo con el valor de <code>Entr.sist.</code>. Los usuarios con más de 90 días se muestran como candidatos para revisión.</p></div></div>
+    <div class="notice notice-amber"><strong>Acción sugerida:</strong> validar con el responsable del usuario y el dueño del proceso antes de bloquear o eliminar. La herramienta no elimina cuentas; solo identifica candidatos para liberar licencias tras la aprobación correspondiente.</div>
+    <section class="kpi-grid">
+      <article class="panel kpi kpi-amber"><span class="kpi-label">Candidatos &gt; 90 días</span><strong id="inactiveCount">0</strong><span class="kpi-foot">Según última entrada registrada</span></article>
+      <article class="panel kpi"><span class="kpi-label">Porcentaje de la vista</span><strong id="inactivePercent">0%</strong><span class="kpi-foot">Candidatos / registros filtrados</span></article>
+      <article class="panel kpi"><span class="kpi-label">Sin fecha de entrada</span><strong id="missingEntryCount">0</strong><span class="kpi-foot">Requieren validación manual</span></article>
+      <article class="panel kpi"><span class="kpi-label">Fecha de referencia</span><strong id="referenceDate" class="date-value">—</strong><span class="kpi-foot">Fecha de carga del Excel</span></article>
+    </section>
+    <section class="panel data-panel">
+      <div class="table-heading"><div><h2>Usuarios candidatos para revisión</h2><p>Incluye usuario, grupo, empresa, ID y días desde la última entrada.</p></div><button id="exportInactiveButton" class="button" type="button" disabled>Exportar candidatos CSV</button></div>
+      <div class="table-scroll" id="inactiveTable"><div class="empty-state">Carga un archivo para calcular la inactividad.</div></div>
+      <p class="table-note">La antigüedad se calcula como días calendario entre la fecha en que se carga el Excel y <code>Entr.sist.</code>. Si la fecha de entrada es posterior a la fecha de carga, se marca para validar el dato.</p>
+    </section>
+  </section>
+
+  <section id="alertsTab" class="tab-content">
+    <div class="section-intro"><div class="intro-icon">⚑</div><div><h2>Centro de alertas</h2><p>Alertas preventivas de vigencia y calidad de datos para priorizar la revisión administrativa.</p></div></div>
+    <div class="alert-summary" id="alertSummary"></div>
+    <section class="panel data-panel">
+      <div class="table-heading"><div><h2>Detalle de alertas</h2><p>Las fechas se comparan contra la fecha de carga del Excel.</p></div><button id="exportAlertsButton" class="button button-light" type="button" disabled>Exportar alertas CSV</button></div>
+      <div class="table-scroll" id="alertsTable"><div class="empty-state">Carga un archivo para generar alertas.</div></div>
+    </section>
+  </section>
+
+  <aside class="notice"><strong>Importante:</strong> <code>ID</code> se utiliza como categoría solicitada de tipo de licencia. <code>Entr.sist.</code> se interpreta como fecha de última entrada al sistema. La recomendación es revisar y aprobar cualquier baja con los responsables de SAP; el dashboard no reemplaza USMM/USMMOLD ni las reglas contractuales oficiales.</aside>
+  <footer>Prototipo de analítica · Inspiración visual en el ecosistema cafetero colombiano · Procesamiento local en el navegador.</footer>
+</main>
+<script src="js/app.js"></script>
+</body>
+</html>
