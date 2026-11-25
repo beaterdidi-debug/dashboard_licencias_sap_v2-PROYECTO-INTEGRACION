@@ -105,3 +105,4 @@ En Windows, Jenkins instalado como servicio puede ejecutarse con una cuenta dist
 a la sesion que inicia Docker Desktop. Si `docker info` falla desde Jenkins aunque
 funcione en CMD, revisar la cuenta del servicio Jenkins y sus permisos de acceso al
 motor Docker. No almacenar contrasenas ni tokens directamente en el Jenkinsfile.
+Prueba de integración continua CI/CD con Jenkins.
