@@ -1,8 +1,10 @@
-
 services:
   dashboard:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dashboard-licencias-sap:latest
     container_name: dashboard-licencias-sap
     ports:
-      - "8080:80"
+      - "8081:80"
     restart: unless-stopped
